@@ -9,70 +9,61 @@ const smtpPassword = ""; // Password for smtp server authentication
 const smtpHost = ""; // hostname of the smtp server
 const smtpPort = 587; // port the smtp is listening on
 
+const wait = (millis) =>
+  new Promise((resolve) => setTimeout(resolve, millis));
+
 describe("send email to mailsac", function () {
-  afterEach(function () {
-    /* delete all messages in the inbox after the test runs to prevent leaky tests.
+  this.timeout(100000); // test can take a long time to run. This increases the default timeout for mocha
+  
+  /* delete all messages in the inbox after the test runs to prevent leaky tests.
        This requires the inbox to private, which is a paid feature of Mailsac.
        The afterEach section could be omitted if using a public address
     */
-    return request("https://mailsac.com")
+  afterEach(() => request("https://mailsac.com")
       .delete(`/api/addresses/${mailsacToAddress}/messages`)
       .set("Mailsac-Key", mailsacAPIKey)
-      .expect(204);
-  });
-  this.timeout(100000); // test can take a long time to run. This increases the default timeout for mocha
-  it("sends passwords with link to mailsac website", function () {
-    // Checks to see if they email was received with a retry every ~10 seconds for 10 attempts.
-    const wait = (millis) =>
-      new Promise((resolve) => setTimeout(resolve, millis));
-    const checkNewMessage = async (httpRequestFn) => {
-      for (let i = 0; i < 10; i++) {
-        const res = await httpRequestFn();
-        if (res.body.length) return res.body;
-        await wait(9950);
-      }
-      throw new Error("it never happened");
-    };
+      .expect(204));
 
-    async function sendMail() {
-      // create a transporter object using the default SMTP transport
-      const transport = nodemailer.createTransport({
-        host: smtpHost,
-        port: smtpPort,
-        auth: {
-          user: smtpUserName,
-          pass: smtpPassword,
-        },
-      });
-      // send mail using the defined transport object
-      return (info = await transport.sendMail({
-        from: smtpUserName, // sender address
-        to: mailsacToAddress, // recipient address
-        subject: "Hello!",
-        text: "Checkout https://mailsac.com",
-        html: "Checkout <a href https://mailsac.com>Mailsac.com</a>",
-      }));
+  it("sends passwords with link to mailsac website", async () => {
+    // create a transporter object using the default SMTP transport
+    const transport = nodemailer.createTransport({
+      host: smtpHost,
+      port: smtpPort,
+      auth: {
+        user: smtpUserName,
+        pass: smtpPassword,
+      },
+    });
+    // send mail using the defined transport object
+    const result = await transport.sendMail({
+      from: smtpUserName, // sender address
+      to: mailsacToAddress, // recipient address
+      subject: "Hello!",
+      text: "Check out https://example.com",
+      html: "Check out <a href https://example.com>My website</a>",
+    });
+
+    // logs the messageId of the email, confirming the email was submitted to the smtp server
+    console.log("Sent email with messageId: ", result.messageId);
+
+    // Check email in the inbox 10x, waiting 5 secs in between. Once we find mail, abort the loop.
+    let messages = [];
+    for (let i = 0; i < 10; i++) {
+      // returns the JSON array of email message objects from mailsac.
+      const res = await request("https://mailsac.com")
+        .get(`/api/addresses/${mailsacToAddress}/messages`)
+        .set("Mailsac-Key", mailsacAPIKey);
+      
+      messages = res.body;
+      if (messages.length > 0) {
+        break;
+      };
+      await wait(4500);
     }
-
-    // calls sendMail function to send an email using nodemailer. the sendMail function includes the transport configuration for the smtp server
-    return sendMail()
-      .then((result) => {
-        console.log("Sent email with messageId: ", result.messageId); // logs the messageId of the email, confirming the email was submitted to the smtp server
-      })
-      .then(() => {
-        // returns the JSON object of the email from mailsac. The checkNewMessage function provides a retry mechanism while the email makes its way through the interwebs
-        return checkNewMessage(() =>
-          request("https://mailsac.com")
-            .get(`/api/addresses/${mailsacToAddress}/messages`)
-            .set("Mailsac-Key", mailsacAPIKey)
-        ).then((messages) => {
-          // After a message is retrieved from mailsac, the JSON object is checked to see if the link was parsed from the email and it is the correct link 
-          const link = messages?.[0]?.links.find((l) => "https://mailsac.com");
-          assert(link, "Missing / Incorrect link in email");
-        });
-      })
-      .catch((error) => {
-        console.log(error); // log errors to console
-      });
+    assert.equal(messages.length, "Never received messages!");
+    
+    // After a message is retrieved from mailsac, the JSON object is checked to see if the link was parsed from the email and it is the correct link 
+    const link = messages[0].links.find((l) => "https://example.com");
+    assert(link, "Missing / Incorrect link in email");
   });
 });
