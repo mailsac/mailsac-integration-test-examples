@@ -9,20 +9,21 @@ const smtpPassword = ""; // Password for smtp server authentication
 const smtpHost = ""; // hostname of the smtp server
 const smtpPort = 587; // port the smtp is listening on
 
-const wait = (millis) =>
-  new Promise((resolve) => setTimeout(resolve, millis));
+const wait = (millis) => new Promise((resolve) => setTimeout(resolve, millis));
 
 describe("send email to mailsac", function () {
   this.timeout(100000); // test can take a long time to run. This increases the default timeout for mocha
-  
+
   /* delete all messages in the inbox after the test runs to prevent leaky tests.
        This requires the inbox to private, which is a paid feature of Mailsac.
        The afterEach section could be omitted if using a public address
     */
-  afterEach(() => request("https://mailsac.com")
+  afterEach(() =>
+    request("https://mailsac.com")
       .delete(`/api/addresses/${mailsacToAddress}/messages`)
       .set("Mailsac-Key", mailsacAPIKey)
-      .expect(204));
+      .expect(204)
+  );
 
   it("sends passwords with link to mailsac website", async () => {
     // create a transporter object using the default SMTP transport
@@ -53,16 +54,16 @@ describe("send email to mailsac", function () {
       const res = await request("https://mailsac.com")
         .get(`/api/addresses/${mailsacToAddress}/messages`)
         .set("Mailsac-Key", mailsacAPIKey);
-      
+
       messages = res.body;
       if (messages.length > 0) {
         break;
-      };
+      }
       await wait(4500);
     }
-    assert.equal(messages.length, "Never received messages!");
-    
-    // After a message is retrieved from mailsac, the JSON object is checked to see if the link was parsed from the email and it is the correct link 
+    assert(messages.length, "Never received messages!");
+
+    // After a message is retrieved from mailsac, the JSON object is checked to see if the link was parsed from the email and it is the correct link
     const link = messages[0].links.find((l) => "https://example.com");
     assert(link, "Missing / Incorrect link in email");
   });
