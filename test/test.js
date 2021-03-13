@@ -12,7 +12,7 @@ const smtpPort = 587; // port the smtp is listening on
 const wait = (millis) => new Promise((resolve) => setTimeout(resolve, millis));
 
 describe("send email to mailsac", function () {
-  this.timeout(100000); // test can take a long time to run. This increases the default timeout for mocha
+  this.timeout(50000); // test can take a long time to run. This increases the default timeout for mocha
 
   /* delete all messages in the inbox after the test runs to prevent leaky tests.
        This requires the inbox to private, which is a paid feature of Mailsac.
@@ -25,7 +25,7 @@ describe("send email to mailsac", function () {
       .expect(204)
   );
 
-  it("sends passwords with link to mailsac website", async () => {
+  it("sends email with link to example.com website", async () => {
     // create a transporter object using the default SMTP transport
     const transport = nodemailer.createTransport({
       host: smtpHost,
