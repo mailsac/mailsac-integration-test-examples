@@ -48,7 +48,7 @@ describe("send email to mailsac", function () {
     // logs the messageId of the email, confirming the email was submitted to the smtp server
     console.log("Sent email with messageId: ", result.messageId);
 
-    // Open websocket waiting for email. Use asynchronous wait to wait until email is received and processed by mailsac.
+    // Open websocket waiting for email.
     const ws = new WebSocket(
       `wss://sock.mailsac.com/incoming-messages?key=${mailsacAPIKey}&addresses=${mailsacToAddress}`
     );
@@ -58,9 +58,15 @@ describe("send email to mailsac", function () {
     ws.on("error", (err) => {
       console.log("connection error", err);
     });
+    // wait for email to be received and sent through the websocket.
+    // first message through the websocket will be a status message, second message should be the email we sent.
+    // Assume that a message with a "to" field is an email and not a status message.
     const wsMessage = await new Promise((resolve) => {
       ws.on("message", (msg) => {
         const wsResponse = JSON.parse(msg);
+        if (wsResponse.status) {
+          console.log(wsResponse)
+        }
         if (wsResponse.to) {
           resolve(wsResponse);
           ws.close();
