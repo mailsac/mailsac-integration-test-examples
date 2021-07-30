@@ -49,7 +49,6 @@ describe("send email to mailsac", function () {
     console.log("Sent email with messageId: ", result.messageId);
 
     // Open websocket waiting for email. Use asynchronous wait to wait until email is received and processed by mailsac.
-    let messages = [];
     const ws = new WebSocket(
       `wss://sock.mailsac.com/incoming-messages?key=${mailsacAPIKey}&addresses=${mailsacToAddress}`
     );
@@ -59,24 +58,21 @@ describe("send email to mailsac", function () {
     ws.on("error", (err) => {
       console.log("connection error", err);
     });
-    ws.on("message", (data) => {
-      messages.push(JSON.parse(data));
+    const wsMessage = await new Promise((resolve) => {
+      ws.on("message", (msg) => {
+        const wsResponse = JSON.parse(msg);
+        if (wsResponse.to) {
+          resolve(wsResponse);
+          ws.close();
+        }
+      });
     });
-    for (let i = 0; i < 10; i++) {
-      // first message from websocket server is a status message. The second message should be the email we sent
-      if (messages.length > 1) {
-        break;
-      }
-      await wait(4500);
-    }
-    // close the websocket connection
-    ws.close();
 
-    assert(messages.length, "Never received messages!");
+    assert(wsMessage, "Never received messages!");
 
     // After a message is retrieved from mailsac, the JSON object is checked to see if the subject and email text are what was expected.
-    const subject = messages[1].subject;
-    const email_text = messages[1].text;
+    const subject = wsMessage.subject;
+    const email_text = wsMessage.text;
     assert.equal(subject, "Hello!");
     assert.equal(email_text, "Check out https://example.com");
   });
