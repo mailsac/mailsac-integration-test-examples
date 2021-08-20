@@ -34,11 +34,12 @@ describe("send email to mailsac", function () {
       ws = new WebSocket(
         `wss://sock.mailsac.com/incoming-messages?key=${mailsacAPIKey}&addresses=${mailsacToAddress}`
       );
-      ws.on("open", () => {
-        resolve("web socket opened");
-      });
-      ws.on("error", (err) => {
-        reject("connection error", err);
+      ws.on("message", (msg) => {
+        const wsMessage = JSON.parse(msg)
+        if (wsMessage.status != 200 ) {
+          reject("connection error: " + wsMessage.error);
+        }
+        resolve(wsMessage)
       });
     })
   });
