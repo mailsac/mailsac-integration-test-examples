@@ -19,27 +19,29 @@ describe("send email to mailsac", function () {
        This requires the inbox to private, which is a paid feature of Mailsac.
        The afterEach section could be omitted if using a public address
     */
-  afterEach(() =>
+  after(() =>
     request("https://mailsac.com")
       .delete(`/api/addresses/${mailsacToAddress}/messages`)
       .set("Mailsac-Key", mailsacAPIKey)
       .expect(204)
   );
-  // Open websocket waiting for email. This websocket will be reused for tests in this file.
-  before(() => {
-    ws = new WebSocket(
-      `wss://sock.mailsac.com/incoming-messages?key=${mailsacAPIKey}&addresses=${mailsacToAddress}`
-    );
-    ws.on("open", () => {
-      console.log("web socket opened");
-    });
-    ws.on("error", (err) => {
-      console.log("connection error", err);
-    });
-  });
-
   // close websocket after all tests finish
   after(() => ws.close());
+
+  // Open websocket waiting for email. This websocket will be reused for tests in this file.
+  before(() => {
+    return new Promise((resolve, reject) => {
+      ws = new WebSocket(
+        `wss://sock.mailsac.com/incoming-messages?key=${mailsacAPIKey}&addresses=${mailsacToAddress}`
+      );
+      ws.on("open", () => {
+        resolve("web socket opened");
+      });
+      ws.on("error", (err) => {
+        reject("connection error", err);
+      });
+    })
+  });
 
   it("sends email with link to example.com website", async () => {
     // create a transporter object using the default SMTP transport
