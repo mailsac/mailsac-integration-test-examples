@@ -38,6 +38,7 @@ describe("send email to mailsac", function () {
         const wsMessage = JSON.parse(msg)
         if (wsMessage.status != 200 ) {
           reject("connection error: " + wsMessage.error);
+          return
         }
         resolve(wsMessage)
       });
