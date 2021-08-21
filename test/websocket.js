@@ -35,14 +35,21 @@ describe("send email to mailsac", function () {
         `wss://sock.mailsac.com/incoming-messages?key=${mailsacAPIKey}&addresses=${mailsacToAddress}`
       );
       ws.on("message", (msg) => {
-        const wsMessage = JSON.parse(msg);
+        try {
+          const wsMessage = JSON.parse(msg);
+        } catch {
+          assert(wsMessage, "Failed to parse JSON from websocket message");
+        }
         if (wsMessage.status != 200) {
           reject("connection error: " + wsMessage.error);
-          return
+          return;
         }
         resolve(wsMessage);
       });
-    })
+      ws.on("error", (err) => {
+        reject(err);
+      });
+    });
   });
 
   it("sends email with link to example.com website", async () => {
