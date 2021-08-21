@@ -35,12 +35,12 @@ describe("send email to mailsac", function () {
         `wss://sock.mailsac.com/incoming-messages?key=${mailsacAPIKey}&addresses=${mailsacToAddress}`
       );
       ws.on("message", (msg) => {
-        const wsMessage = JSON.parse(msg)
-        if (wsMessage.status != 200 ) {
+        const wsMessage = JSON.parse(msg);
+        if (wsMessage.status != 200) {
           reject("connection error: " + wsMessage.error);
           return
         }
-        resolve(wsMessage)
+        resolve(wsMessage);
       });
     })
   });
@@ -120,6 +120,9 @@ describe("send email to mailsac", function () {
     const subject = wsMessage.subject;
     const email_text = wsMessage.text;
     assert.equal(subject, "Unsubscribe");
-    assert.equal(email_text, "Click the link to unsubscribe https://unsubscribe.example.com");
+    assert.equal(
+      email_text,
+      "Click the link to unsubscribe https://unsubscribe.example.com"
+    );
   });
 });
