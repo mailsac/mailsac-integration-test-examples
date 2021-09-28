@@ -39,9 +39,10 @@ describe("send email to mailsac", function () {
       ws = new WebSocket(
         `wss://sock.mailsac.com/incoming-messages?key=${mailsacAPIKey}&addresses=${mailsacToAddress}`
       );
+      let wsMessage = '';
       ws.on("message", (msg) => {
         try {
-          const wsMessage = JSON.parse(msg);
+          wsMessage = JSON.parse(msg);
         } catch {
           assert(wsMessage, "Failed to parse JSON from websocket message");
         }
