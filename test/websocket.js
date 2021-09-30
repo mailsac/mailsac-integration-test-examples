@@ -53,7 +53,7 @@ describe("send email to mailsac", function () {
           assert(wsMessage, "Failed to parse JSON from websocket message");
         }
         if (wsMessage.status != 200) {
-          reject("connection error: " + wsMessage.error);
+          reject(new Error("connection error: " + wsMessage.error));
           return;
         }
         resolve(wsMessage);
