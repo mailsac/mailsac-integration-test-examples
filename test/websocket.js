@@ -45,7 +45,7 @@ describe("send email to mailsac", function () {
       ws = new WebSocket(
         `wss://sock.mailsac.com/incoming-messages?key=${mailsacAPIKey}&addresses=${mailsacToAddress}`
       );
-      let wsMessage = '';
+      let wsMessage;
       ws.on("message", (msg) => {
         try {
           wsMessage = JSON.parse(msg);
