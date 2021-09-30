@@ -100,9 +100,9 @@ describe("send email to mailsac", function () {
 
     // After a message is retrieved from mailsac, the JSON object is checked to see if the subject and email text are what was expected.
     const subject = wsMessage.subject;
-    const email_text = wsMessage.text;
+    const emailText = wsMessage.text;
     assert.equal(subject, "Hello!");
-    assert.equal(email_text, "Check out https://example.com");
+    assert.equal(emailText, "Check out https://example.com");
   });
 
   // Sends a second email reusing the websocket.
@@ -137,10 +137,10 @@ describe("send email to mailsac", function () {
     assert(wsMessage, "Never received messages!");
 
     const subject = wsMessage.subject;
-    const email_text = wsMessage.text;
+    const emailText = wsMessage.text;
     assert.equal(subject, "Unsubscribe");
     assert.equal(
-      email_text,
+      emailText,
       "Click the link to unsubscribe https://unsubscribe.example.com"
     );
   });
