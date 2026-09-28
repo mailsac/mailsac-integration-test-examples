@@ -62,7 +62,6 @@ jobs:
       - name: Skip when Mailsac is not configured
         id: configured
         working-directory: . # runs before checkout, when the example folder does not exist yet
-        working-directory: . # runs before checkout, when the example folder does not exist yet
         run: echo "ok=${{ env.MAILSAC_API_KEY != '' }}" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v4
         if: steps.configured.outputs.ok == 'true'
@@ -94,7 +93,6 @@ jobs:
     steps:
       - name: Skip when staging is not configured
         id: configured
-        working-directory: . # runs before checkout, when the example folder does not exist yet
         working-directory: . # runs before checkout, when the example folder does not exist yet
         run: echo "ok=${{ env.MAILSAC_API_KEY != '' && env.APP_URL != '' }}" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v4
