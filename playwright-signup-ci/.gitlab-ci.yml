@@ -1,0 +1,38 @@
+# GitLab CI template for this example. GitLab reads .gitlab-ci.yml from the repository root:
+# copy this file there in your own project (paths below assume the example is the project root).
+# The same two layers on GitLab CI. Set MAILSAC_API_KEY (masked) and MAILSAC_USERNAME
+# as CI/CD variables; STAGING_URL enables the scheduled real-delivery job.
+default:
+  image: mcr.microsoft.com/playwright:v1.63.0-noble
+  before_script:
+    - npm ci
+
+email-tests:mailpit:
+  services:
+    - name: axllent/mailpit:latest
+      alias: mailpit
+  variables:
+    INBOX: mailpit
+    MAILPIT_URL: http://mailpit:8025
+    SMTP_HOST: mailpit
+    SMTP_PORT: "1025"
+  script:
+    - npx playwright test
+  artifacts:
+    when: on_failure
+    paths: [playwright-report/]
+
+email-tests:mailsac-capture:
+  rules:
+    - if: $MAILSAC_API_KEY
+  variables:
+    SMTP_HOST: capture.mailsac.com
+    SMTP_PORT: "5587"
+  script:
+    - SMTP_USER="$MAILSAC_USERNAME" SMTP_PASS="$MAILSAC_API_KEY" npx playwright test
+
+email-tests:real-delivery:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule" && $MAILSAC_API_KEY && $STAGING_URL
+  script:
+    - APP_URL="$STAGING_URL" npx playwright test

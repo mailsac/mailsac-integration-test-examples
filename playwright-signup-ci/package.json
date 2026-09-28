@@ -1,0 +1,21 @@
+{
+  "name": "email-testing-ci-example",
+  "version": "1.0.0",
+  "private": true,
+  "description": "End-to-end test of a signup verification email in CI/CD with Mailsac and Playwright",
+  "license": "MIT",
+  "scripts": {
+    "start": "node app/server.js",
+    "test": "playwright test"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "nodemailer": "^6.10.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

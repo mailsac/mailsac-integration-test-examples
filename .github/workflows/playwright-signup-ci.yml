@@ -1,0 +1,111 @@
+name: Playwright signup email tests (playwright-signup-ci)
+
+on:
+  pull_request:
+    paths: ["playwright-signup-ci/**", ".github/workflows/playwright-signup-ci.yml"]
+  push:
+    branches: [main]
+    paths: ["playwright-signup-ci/**", ".github/workflows/playwright-signup-ci.yml"]
+  schedule:
+    - cron: "17 6 * * *" # daily real-delivery check
+  workflow_dispatch:
+
+# The example lives in playwright-signup-ci/; in your own repo, drop working-directory.
+defaults:
+  run:
+    working-directory: playwright-signup-ci
+
+jobs:
+  # 1. Every pull request: a local SMTP catcher. Fast, free, nothing leaves CI.
+  #    Proves the app sends the right email with a working link and code.
+  mailpit:
+    runs-on: ubuntu-latest
+    services:
+      mailpit:
+        image: axllent/mailpit:latest
+        ports:
+          - 1025:1025
+          - 8025:8025
+    env:
+      INBOX: mailpit
+      SMTP_HOST: localhost
+      SMTP_PORT: "1025"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: playwright-signup-ci/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report-mailpit
+          path: playwright-signup-ci/playwright-report
+
+  # 2. Hosted inboxes with Mailsac Email Capture: the app sends to capture.mailsac.com
+  #    and the test reads the message over the Mailsac API from any runner.
+  #    Needs the repository secret MAILSAC_API_KEY and variable MAILSAC_USERNAME.
+  mailsac-capture:
+    runs-on: ubuntu-latest
+    env:
+      MAILSAC_API_KEY: ${{ secrets.MAILSAC_API_KEY }}
+      MAILSAC_DOMAIN: ${{ vars.MAILSAC_DOMAIN }}
+      SMTP_HOST: capture.mailsac.com
+      SMTP_PORT: "5587"
+      SMTP_USER: ${{ vars.MAILSAC_USERNAME }}
+      SMTP_PASS: ${{ secrets.MAILSAC_API_KEY }}
+    steps:
+      - name: Skip when Mailsac is not configured
+        id: configured
+        working-directory: . # runs before checkout, when the example folder does not exist yet
+        run: echo "ok=${{ env.MAILSAC_API_KEY != '' }}" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
+        if: steps.configured.outputs.ok == 'true'
+      - uses: actions/setup-node@v4
+        if: steps.configured.outputs.ok == 'true'
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: playwright-signup-ci/package-lock.json
+      - run: npm ci
+        if: steps.configured.outputs.ok == 'true'
+      - run: npx playwright install --with-deps chromium
+        if: steps.configured.outputs.ok == 'true'
+      - run: npx playwright test
+        if: steps.configured.outputs.ok == 'true'
+
+  # 3. Real delivery, daily and on main: sign up on your deployed staging app, which sends
+  #    through your real email provider (SES, SendGrid, Postmark...) to a Mailsac inbox.
+  #    Catches expired provider credentials, DNS/SPF/DKIM problems and blocked sending domains.
+  #    Needs MAILSAC_API_KEY and the variable STAGING_URL. A private Mailsac domain
+  #    (MAILSAC_DOMAIN) keeps the mail from real signups out of public inboxes.
+  real-delivery:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    env:
+      MAILSAC_API_KEY: ${{ secrets.MAILSAC_API_KEY }}
+      MAILSAC_DOMAIN: ${{ vars.MAILSAC_DOMAIN }}
+      APP_URL: ${{ vars.STAGING_URL }}
+    steps:
+      - name: Skip when staging is not configured
+        id: configured
+        working-directory: . # runs before checkout, when the example folder does not exist yet
+        run: echo "ok=${{ env.MAILSAC_API_KEY != '' && env.APP_URL != '' }}" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
+        if: steps.configured.outputs.ok == 'true'
+      - uses: actions/setup-node@v4
+        if: steps.configured.outputs.ok == 'true'
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: playwright-signup-ci/package-lock.json
+      - run: npm ci
+        if: steps.configured.outputs.ok == 'true'
+      - run: npx playwright install --with-deps chromium
+        if: steps.configured.outputs.ok == 'true'
+      - run: npx playwright test
+        if: steps.configured.outputs.ok == 'true'
