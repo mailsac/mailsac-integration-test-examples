@@ -20,4 +20,7 @@ the same purpose.
 - Email testing API overview: https://mailsac.com/pages/email-testing-api/
 - Cypress plugin: [`@mailsac/cypress`](https://www.npmjs.com/package/@mailsac/cypress)
 - Playwright guide: https://blog.mailsac.com/playwright-email-testing/
+- Cypress email testing guide: https://mailsac.com/pages/cypress-email-testing/
+- Test email OTP codes and magic links (Playwright, Cypress, Python, Selenium): https://mailsac.com/pages/test-otp-and-magic-link-emails/
+- Private email domain for testing and CI: https://mailsac.com/pages/private-test-email-domain/
 - Documentation: https://docs.mailsac.com
